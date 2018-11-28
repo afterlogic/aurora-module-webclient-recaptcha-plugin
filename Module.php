@@ -18,8 +18,11 @@ class Module extends \Aurora\System\Module\AbstractModule
 {
 	public function init()
 	{
-		\Aurora\System\EventEmitter::getInstance()->on(
-			'StandardLoginFormWebclient::Login::before', [$this, 'onLogin'], 90
+		\Aurora\System\EventEmitter::getInstance()->onArray(
+			[
+				['StandardLoginFormWebclient::Login::before', [$this, 'onLogin'], 90],
+				['MailSignup::Signup::before', [$this, 'onLogin'], 90]
+			]
 		);
 	}
 

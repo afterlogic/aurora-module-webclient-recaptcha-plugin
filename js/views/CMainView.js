@@ -14,10 +14,15 @@ var
 function CMainView()
 {
 	this.bShown = false;
+	this.recaptchaPlace = ko.observable(null);
+	this.recaptchaPlace.subscribe(function () {
+		this.ShowRecaptcha();
+	}, this);
+	this.sId = Math.round(Math.random() * 1000).toString();
 	if (!window.grecaptcha)
 	{
-		window.ShowRecaptcha = this.ShowRecaptcha;
-		$.getScript('https://www.google.com/recaptcha/api.js?onload=ShowRecaptcha&render=explicit');
+		window['ShowRecaptcha' + this.sId] = this.ShowRecaptcha.bind(this);
+		$.getScript('https://www.google.com/recaptcha/api.js?onload=ShowRecaptcha' + this.sId + '&render=explicit');
 	}
 	else
 	{
@@ -29,7 +34,7 @@ CMainView.prototype.ViewTemplate = '%ModuleName%_MainView';
 
 CMainView.prototype.ShowRecaptcha = function ()
 {
-	if (window.grecaptcha)
+	if (window.grecaptcha && this.recaptchaPlace())
 	{
 		if (!this.bShown)
 		{
@@ -41,7 +46,9 @@ CMainView.prototype.ShowRecaptcha = function ()
 			{
 				sKey = "wrong-key";
 			}
-			window.grecaptcha.render('recaptcha-place', {
+
+			this.recaptchaPlace().append('<div id="recaptcha-place' + this.sId+ '"></div>');
+			window.grecaptcha.render('recaptcha-place' + this.sId, {
 				'sitekey': sKey
 			});
 		}
@@ -65,4 +72,4 @@ CMainView.prototype.getParametersForSubmit = function ()
 	return oResult;
 };
 
-module.exports = new CMainView();
+module.exports = CMainView;

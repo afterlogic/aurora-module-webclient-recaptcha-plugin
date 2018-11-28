@@ -5,19 +5,22 @@ module.exports = function (oAppData) {
 		_ = require('underscore'),
 
 		App = require('%PathToCoreWebclientModule%/js/App.js'),
-		TextUtils = require('%PathToCoreWebclientModule%/js/utils/Text.js'),
 		Settings = require('modules/%ModuleName%/js/Settings.js')
 	;
 
 	Settings.init(oAppData);
 
-	return {
-		start: function (ModulesManager)
-		{
-			ModulesManager.run('StandardLoginFormWebclient', 'registerComposeExtentionComponent', [require('modules/%ModuleName%/js/views/MainView.js')]);
-		}
+	if (App.getUserRole() === Enums.UserRole.Anonymous)
+	{
+		return {
+			start: function (ModulesManager)
+			{
+				var CMainView = require('modules/%ModuleName%/js/views/CMainView.js');
+				ModulesManager.run('StandardLoginFormWebclient', 'registerExtentionComponent', [new CMainView()]);
+				ModulesManager.run('MailSignup', 'registerExtentionComponent', [new CMainView()]);
+			}
 
-	};
-
+		};
+	}
 	return null;
 };
