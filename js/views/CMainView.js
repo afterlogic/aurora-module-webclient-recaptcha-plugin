@@ -4,25 +4,24 @@ var
 	_ = require('underscore'),
 	ko = require('knockout'),
 	$ = require('jquery'),
-
 	Settings = require('modules/%ModuleName%/js/Settings.js')
 ;
 
 /**
  * @constructor
  */
-function CMainView()
+function CMainView(sModuleName)
 {
+	this.sModuleName = sModuleName;
 	this.bShown = false;
 	this.recaptchaPlace = ko.observable(null);
 	this.recaptchaPlace.subscribe(function () {
 		this.ShowRecaptcha();
 	}, this);
-	this.sId = Math.round(Math.random() * 1000).toString();
 	if (!window.grecaptcha)
 	{
-		window['ShowRecaptcha' + this.sId] = this.ShowRecaptcha.bind(this);
-		$.getScript('https://www.google.com/recaptcha/api.js?onload=ShowRecaptcha' + this.sId + '&render=explicit');
+		window['ShowRecaptcha' + sModuleName] = this.ShowRecaptcha.bind(this);
+		$.getScript('https://www.google.com/recaptcha/api.js?onload=ShowRecaptcha' + sModuleName + '&render=explicit');
 	}
 	else
 	{
@@ -46,17 +45,15 @@ CMainView.prototype.ShowRecaptcha = function ()
 			{
 				sKey = "wrong-key";
 			}
-
-			this.recaptchaPlace().append('<div id="recaptcha-place' + this.sId+ '"></div>');
-			window.grecaptcha.render('recaptcha-place' + this.sId, {
+			this.recaptchaPlace().append('<div id="recaptcha-place-' + this.sModuleName + '"></div>');
+			this.widgetId = window.grecaptcha.render('recaptcha-place-' + this.sModuleName, {
 				'sitekey': sKey
 			});
 		}
 		else
 		{
-			window.grecaptcha.reset();
+			window.grecaptcha.reset(this.widgetId);
 		}
-
 		this.bShown = true;
 	}
 };
@@ -68,7 +65,7 @@ CMainView.prototype.getParametersForSubmit = function ()
 		oResult = {}
 	;
 
-	oResult[sParamName] = window.grecaptcha.getResponse();
+	oResult[sParamName] = window.grecaptcha.getResponse(this.widgetId);
 	return oResult;
 };
 

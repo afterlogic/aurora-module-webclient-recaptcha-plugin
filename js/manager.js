@@ -16,8 +16,8 @@ module.exports = function (oAppData) {
 			start: function (ModulesManager)
 			{
 				var CMainView = require('modules/%ModuleName%/js/views/CMainView.js');
-				ModulesManager.run('StandardLoginFormWebclient', 'registerExtentionComponent', [new CMainView()]);
-				ModulesManager.run('MailSignup', 'registerExtentionComponent', [new CMainView()]);
+				ModulesManager.run('StandardLoginFormWebclient', 'registerExtentionComponent', [new CMainView('StandardLoginFormWebclient')]);
+				ModulesManager.run('MailSignup', 'registerExtentionComponent', [new CMainView('MailSignup')]);
 			}
 
 		};
