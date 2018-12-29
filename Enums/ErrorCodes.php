@@ -14,12 +14,14 @@ namespace Aurora\Modules\RecaptchaWebclientPlugin\Enums;
  */
 class ErrorCodes
 {
-	const CaptchaError	= 1001;
+	const RecaptchaUnknownError		= 1001;
+	const RecaptchaVerificationError	= 1002;
 
 	/**
 	 * @var array
 	 */
 	protected $aConsts = [
-		'CaptchaError'	=> self::CaptchaError
+		'RecaptchaUnknownError'		=> self::RecaptchaUnknownError,
+		'RecaptchaVerificationError'	=> self::RecaptchaVerificationError
 	];
 }

@@ -18,6 +18,11 @@ class Module extends \Aurora\System\Module\AbstractModule
 {
 	public function init()
 	{
+		$this->aErrors = [
+			Enums\ErrorCodes::RecaptchaVerificationError	=> $this->i18N('ERROR_RECAPTCHA_VERIFICATION_DID_NOT_COMPLETE'),
+			Enums\ErrorCodes::RecaptchaUnknownError		=> $this->i18N('ERROR_UNKNOWN_RECAPTCHA_ERROR'),
+		];
+
 		\Aurora\System\EventEmitter::getInstance()->onArray(
 			[
 				['StandardLoginFormWebclient::Login::before', [$this, 'onLogin'], 90],
@@ -43,7 +48,13 @@ class Module extends \Aurora\System\Module\AbstractModule
 	{
 		if (!isset($aArgs['RecaptchaWebclientPluginToken']) || empty($aArgs['RecaptchaWebclientPluginToken']))
 		{
-			$mSubscriptionResult = ['ErrorCode' => Enums\ErrorCodes::CaptchaError];
+			$mSubscriptionResult = [
+				'Error' => [
+					'Code'		=> Enums\ErrorCodes::RecaptchaVerificationError,
+					'ModuleName'	=> $this->GetName(),
+					'Override'		=> true
+				]
+			];
 			return true;
 		}
 		$sPrivateKey = $this->getConfig('PrivateKey', '');
@@ -51,7 +62,14 @@ class Module extends \Aurora\System\Module\AbstractModule
 		$oResponse = $oRecaptcha->verify($aArgs['RecaptchaWebclientPluginToken']);
 		if (!$oResponse->isSuccess())
 		{
-			$mSubscriptionResult = ['Error' => $oResponse->getErrorCodes()];
+			\Aurora\System\Api::Log("RECAPTCHA error: " . implode(', ', $oResponse->getErrorCodes()));
+			$mSubscriptionResult = [
+				'Error' => [
+					'Code'		=> Enums\ErrorCodes::RecaptchaUnknownError,
+					'ModuleName'	=> $this->GetName(),
+					'Override'		=> true
+				]
+			];
 			return true;
 		}
 	}
