@@ -26,7 +26,8 @@ class Module extends \Aurora\System\Module\AbstractModule
 		\Aurora\System\EventEmitter::getInstance()->onArray(
 			[
 				['StandardLoginFormWebclient::Login::before', [$this, 'onLogin'], 90],
-				['MailSignup::Signup::before', [$this, 'onLogin'], 90]
+				['MailSignup::Signup::before', [$this, 'onSignup'], 90],
+				['Core::Login::after', [$this, 'onAfterLogin']],
 			]
 		);
 	}
@@ -40,11 +41,52 @@ class Module extends \Aurora\System\Module\AbstractModule
 		\Aurora\System\Api::checkUserRoleIsAtLeast(\Aurora\System\Enums\UserRole::Anonymous);
 
 		return [
-			'PublicKey' => $this->getConfig('PublicKey', '')
+			'PublicKey' => $this->getConfig('PublicKey', ''),
+			'LimitCount' => $this->getConfig('LimitCount', 0)
 		];
 	}
 
 	public function onLogin($aArgs, &$mResult, &$mSubscriptionResult)
+	{
+		$iAuthError = isset($_COOKIE['auth-error']) ? (int) $_COOKIE['auth-error'] : 0;
+		//If the user has exceeded the number of authentication attempts
+		if ($iAuthError >= $this->getConfig('LimitCount', 0))
+		{
+			if (!isset($aArgs['RecaptchaWebclientPluginToken']) || empty($aArgs['RecaptchaWebclientPluginToken']))
+			{
+				$mSubscriptionResult = [
+					'Error' => [
+						'Code'		=> Enums\ErrorCodes::RecaptchaVerificationError,
+						'ModuleName'	=> $this->GetName(),
+						'Override'		=> true
+					]
+				];
+				return true;
+			}
+			$sPrivateKey = $this->getConfig('PrivateKey', '');
+			$oRecaptcha = new \ReCaptcha\ReCaptcha($sPrivateKey);
+			$oResponse = $oRecaptcha->verify($aArgs['RecaptchaWebclientPluginToken']);
+			if (!$oResponse->isSuccess())
+			{
+				\Aurora\System\Api::Log("RECAPTCHA error: " . implode(', ', $oResponse->getErrorCodes()));
+				$mSubscriptionResult = [
+					'Error' => [
+						'Code'		=> Enums\ErrorCodes::RecaptchaUnknownError,
+						'ModuleName'	=> $this->GetName(),
+						'Override'		=> true
+					]
+				];
+				return true;
+			}
+			//If the user is authenticated, reset the counter for unsuccessful attempts.
+			if (isset($_COOKIE['auth-error']))
+			{
+				@\setcookie('auth-error');
+			}
+		}
+	}
+
+	public function onSignup($aArgs, &$mResult, &$mSubscriptionResult)
 	{
 		if (!isset($aArgs['RecaptchaWebclientPluginToken']) || empty($aArgs['RecaptchaWebclientPluginToken']))
 		{
@@ -71,6 +113,16 @@ class Module extends \Aurora\System\Module\AbstractModule
 				]
 			];
 			return true;
+		}
+	}
+
+	public function onAfterLogin($aArgs, &$mResult)
+	{
+		//if auth was failed - incrementing auth-error counter
+		if (!(is_array($mResult) && isset($mResult['AuthToken'])))
+		{
+			$iAuthErrorCount = isset($_COOKIE['auth-error']) ? ((int) $_COOKIE['auth-error'] + 1) : 1;
+			@\setcookie('auth-error', $iAuthErrorCount, \strtotime('+1 hour'), \Aurora\System\Api::getCookiePath());
 		}
 	}
 }

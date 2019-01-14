@@ -1,7 +1,6 @@
 'use strict';
 
 var
-	ko = require('knockout'),
 	_ = require('underscore'),
 
 	Types = require('%PathToCoreWebclientModule%/js/utils/Types.js')
@@ -10,6 +9,7 @@ var
 module.exports = {
 	ModuleName: 'RecaptchaWebclientPlugin',
 	PublicKey: '',
+	LimitCount: 0,
 
 	/**
 	 * Initializes settings from AppData object sections.
@@ -23,6 +23,7 @@ module.exports = {
 		if (!_.isEmpty(oAppDataSection))
 		{
 			this.PublicKey = Types.pString(oAppDataSection.PublicKey, this.PublicKey);
+			this.LimitCount = Types.pInt(oAppDataSection.LimitCount, this.LimitCount);
 		}
 	}
 };

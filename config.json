@@ -10,5 +10,9 @@
 	"PrivateKey": [
 		"",
 		"string"
+	],
+	"LimitCount": [
+		0,
+		"int"
 	]
 }
