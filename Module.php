@@ -64,7 +64,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 				return true;
 			}
 			$sPrivateKey = $this->getConfig('PrivateKey', '');
-			$oRecaptcha = new \ReCaptcha\ReCaptcha($sPrivateKey);
+			$oRecaptcha = new \ReCaptcha\ReCaptcha($sPrivateKey, new \ReCaptcha\RequestMethod\SocketPost());
 			$oResponse = $oRecaptcha->verify($aArgs['RecaptchaWebclientPluginToken']);
 			if (!$oResponse->isSuccess())
 			{
@@ -100,7 +100,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 			return true;
 		}
 		$sPrivateKey = $this->getConfig('PrivateKey', '');
-		$oRecaptcha = new \ReCaptcha\ReCaptcha($sPrivateKey);
+		$oRecaptcha = new \ReCaptcha\ReCaptcha($sPrivateKey, new \ReCaptcha\RequestMethod\SocketPost());
 		$oResponse = $oRecaptcha->verify($aArgs['RecaptchaWebclientPluginToken']);
 		if (!$oResponse->isSuccess())
 		{
