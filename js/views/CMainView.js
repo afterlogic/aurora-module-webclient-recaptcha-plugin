@@ -2,13 +2,17 @@
 
 var
 	_ = require('underscore'),
-	ko = require('knockout'),
 	$ = require('jquery'),
-	Settings = require('modules/%ModuleName%/js/Settings.js'),
-	App = require('%PathToCoreWebclientModule%/js/App.js')
+	ko = require('knockout'),
+	
+	App = require('%PathToCoreWebclientModule%/js/App.js'),
+	
+	Settings = require('modules/%ModuleName%/js/Settings.js')
 ;
 
 /**
+ * @param {string} sModuleName
+ * @param {boolean} bUseLimitCount
  * @constructor
  */
 function CMainView(sModuleName, bUseLimitCount)
@@ -52,6 +56,15 @@ function CMainView(sModuleName, bUseLimitCount)
 			}
 		}, this));
 	}
+	
+	App.subscribeEvent('AnonymousUserForm::PopulateFormSubmitParameters', _.bind(function (oParams) {
+		if (oParams.Module === sModuleName && oParams.Parameters)
+		{
+			var aParams = this.getParametersForSubmit();
+			_.extend(oParams.Parameters, aParams);
+		}
+	}, this));
+	
 	if (!window.grecaptcha)
 	{
 		window['ShowRecaptcha' + sModuleName] = this.ShowRecaptcha.bind(this);

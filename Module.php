@@ -26,6 +26,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 		\Aurora\System\EventEmitter::getInstance()->onArray(
 			[
 				['StandardLoginFormWebclient::Login::before', [$this, 'onLogin'], 90],
+				['MailLoginFormWebclient::Login::before', [$this, 'onLogin'], 90],
 				['MailSignup::Signup::before', [$this, 'onSignup'], 90],
 				['Core::Login::after', [$this, 'onAfterLogin']],
 			]

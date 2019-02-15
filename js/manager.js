@@ -2,7 +2,10 @@
 
 module.exports = function (oAppData) {
 	var
+		_ = require('underscore'),
+		
 		App = require('%PathToCoreWebclientModule%/js/App.js'),
+		
 		Settings = require('modules/%ModuleName%/js/Settings.js')
 	;
 
@@ -14,8 +17,12 @@ module.exports = function (oAppData) {
 			start: function (ModulesManager)
 			{
 				var CMainView = require('modules/%ModuleName%/js/views/CMainView.js');
-				ModulesManager.run('StandardLoginFormWebclient', 'registerExtentionComponent', [new CMainView('StandardLoginFormWebclient', true)]);
-				ModulesManager.run('MailSignup', 'registerExtentionComponent', [new CMainView('MailSignup')]);
+				App.subscribeEvent('AnonymousUserForm::PopulateBeforeButtonsControllers', _.bind(function (oParams) {
+					if (_.isFunction(oParams.RegisterBeforeButtonsController))
+					{
+						oParams.RegisterBeforeButtonsController(new CMainView(oParams.ModuleName, oParams.ModuleName === 'StandardLoginFormWebclient'));
+					}
+				}, this));
 			}
 		};
 	}
