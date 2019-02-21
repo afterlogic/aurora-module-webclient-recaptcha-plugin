@@ -14,5 +14,13 @@
 	"LimitCount": [
 		0,
 		"int"
+	],
+	"IncludeInMobile": [
+		true,
+		"bool"
+	],
+	"IncludeInDesktop": [
+		true,
+		"bool"
 	]
 }
