@@ -123,7 +123,8 @@ class Module extends \Aurora\System\Module\AbstractModule
 		if (!(is_array($mResult) && isset($mResult['AuthToken'])))
 		{
 			$iAuthErrorCount = isset($_COOKIE['auth-error']) ? ((int) $_COOKIE['auth-error'] + 1) : 1;
-			@\setcookie('auth-error', $iAuthErrorCount, \strtotime('+1 hour'), \Aurora\System\Api::getCookiePath());
+			@\setcookie('auth-error', $iAuthErrorCount, \strtotime('+1 hour'), \Aurora\System\Api::getCookiePath(), 
+					null, \Aurora\System\Api::getCookieSecure());
 		}
 	}
 }
