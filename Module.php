@@ -23,7 +23,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 			Enums\ErrorCodes::RecaptchaUnknownError		=> $this->i18N('ERROR_UNKNOWN_RECAPTCHA_ERROR'),
 		];
 
-		\Aurora\System\EventEmitter::getInstance()->onArray(
+		\Aurora\System\EventEmitter::getInstance()->onAny(
 			[
 				['StandardLoginFormWebclient::Login::before', [$this, 'onLogin'], 90],
 				['MailLoginFormWebclient::Login::before', [$this, 'onLogin'], 90],
