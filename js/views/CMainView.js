@@ -36,7 +36,7 @@ function CMainView(sModuleName, bUseLimitCount)
 			this.bShowRecaptcha(false);
 		}
 		App.subscribeEvent('ReceiveAjaxResponse::after', _.bind(function (oParams) {
-			if (oParams.Request.Module === 'StandardLoginFormWebclient'
+			if ((oParams.Request.Module === 'StandardLoginFormWebclient' || oParams.Request.Module === 'MailLoginFormWebclient')
 				&& oParams.Request.Method === 'Login'
 				&& oParams.Response.Result === false)
 			{

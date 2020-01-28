@@ -29,6 +29,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 				['MailLoginFormWebclient::Login::before', [$this, 'onLogin'], 90],
 				['MailSignup::Signup::before', [$this, 'onSignup'], 90],
 				['Core::Login::after', [$this, 'onAfterLogin']],
+				['MailLoginFormWebclient::Login::after', [$this, 'onAfterLogin']],
 			]
 		);
 	}
@@ -124,7 +125,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 		{
 			$iAuthErrorCount = isset($_COOKIE['auth-error']) ? ((int) $_COOKIE['auth-error'] + 1) : 1;
 			@\setcookie('auth-error', $iAuthErrorCount, \strtotime('+1 hour'), \Aurora\System\Api::getCookiePath(), 
-					null, \Aurora\System\Api::getCookieSecure());
+				null, \Aurora\System\Api::getCookieSecure());
 		}
 	}
 }
