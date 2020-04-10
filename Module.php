@@ -66,7 +66,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 				return true;
 			}
 			$sPrivateKey = $this->getConfig('PrivateKey', '');
-			$oRecaptcha = new \ReCaptcha\ReCaptcha($sPrivateKey, new \ReCaptcha\RequestMethod\SocketPost());
+			$oRecaptcha = new \ReCaptcha\ReCaptcha($sPrivateKey, $this->getRequestMethod());
 			$oResponse = $oRecaptcha->verify($aArgs['RecaptchaWebclientPluginToken']);
 			if (!$oResponse->isSuccess())
 			{
@@ -102,7 +102,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 			return true;
 		}
 		$sPrivateKey = $this->getConfig('PrivateKey', '');
-		$oRecaptcha = new \ReCaptcha\ReCaptcha($sPrivateKey, new \ReCaptcha\RequestMethod\SocketPost());
+		$oRecaptcha = new \ReCaptcha\ReCaptcha($sPrivateKey, $this->getRequestMethod());
 		$oResponse = $oRecaptcha->verify($aArgs['RecaptchaWebclientPluginToken']);
 		if (!$oResponse->isSuccess())
 		{
@@ -126,6 +126,21 @@ class Module extends \Aurora\System\Module\AbstractModule
 			$iAuthErrorCount = isset($_COOKIE['auth-error']) ? ((int) $_COOKIE['auth-error'] + 1) : 1;
 			@\setcookie('auth-error', $iAuthErrorCount, \strtotime('+1 hour'), \Aurora\System\Api::getCookiePath(), 
 				null, \Aurora\System\Api::getCookieSecure());
+		}
+	}
+
+	private function getRequestMethod()
+	{
+		$sRequestMethod = $this->getConfig('RequestMethod', Enums\RequestMethods::SocketPost);
+		switch ($sRequestMethod)
+		{
+			case Enums\RequestMethods::CurlPost:
+				return new \ReCaptcha\RequestMethod\CurlPost();
+			case Enums\RequestMethods::Post:
+				return new \ReCaptcha\RequestMethod\Post();
+			case Enums\RequestMethods::SocketPost:
+			default:
+			return new \ReCaptcha\RequestMethod\SocketPost();
 		}
 	}
 }
