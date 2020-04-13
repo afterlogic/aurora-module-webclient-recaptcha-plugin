@@ -24,7 +24,7 @@
 		"bool"
 	],
 	"RequestMethod": [
-		"socketpost",
+		"post",
 		"string"
 	]
 }
