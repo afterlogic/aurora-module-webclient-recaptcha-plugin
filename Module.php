@@ -16,6 +16,8 @@ namespace Aurora\Modules\RecaptchaWebclientPlugin;
  */
 class Module extends \Aurora\System\Module\AbstractModule
 {
+	protected $sRecaptchaWebclientPluginToken = null;
+
 	public function init()
 	{
 		$this->aErrors = [
@@ -25,11 +27,10 @@ class Module extends \Aurora\System\Module\AbstractModule
 
 		\Aurora\System\EventEmitter::getInstance()->onAny(
 			[
-				['StandardLoginFormWebclient::Login::before', [$this, 'onLogin'], 90],
-				['MailLoginFormWebclient::Login::before', [$this, 'onLogin'], 90],
+				['MailLoginFormWebclient::Login::before', [$this, 'onBeforeMailLoginFormWebclientLogin']],
+				['StandardLoginFormWebclient::Login::before', [$this, 'onBeforeStandardLoginFormWebclient'], 90],
 				['MailSignup::Signup::before', [$this, 'onSignup'], 90],
-				['Core::Login::after', [$this, 'onAfterLogin']],
-				['MailLoginFormWebclient::Login::after', [$this, 'onAfterLogin']],
+				['Core::Login::after', [$this, 'onAfterLogin']]
 			]
 		);
 	}
@@ -48,13 +49,26 @@ class Module extends \Aurora\System\Module\AbstractModule
 		];
 	}
 
-	public function onLogin($aArgs, &$mResult, &$mSubscriptionResult)
+	public function onBeforeMailLoginFormWebclientLogin($aArgs, &$mResult, &$mSubscriptionResult)
+	{
+		if (isset($aArgs['RecaptchaWebclientPluginToken']) && !empty($aArgs['RecaptchaWebclientPluginToken']))
+		{
+			$this->sRecaptchaWebclientPluginToken = $aArgs['RecaptchaWebclientPluginToken'];
+		}
+	}
+
+	public function onBeforeStandardLoginFormWebclient($aArgs, &$mResult, &$mSubscriptionResult)
 	{
 		$iAuthError = isset($_COOKIE['auth-error']) ? (int) $_COOKIE['auth-error'] : 0;
 		//If the user has exceeded the number of authentication attempts
 		if ($iAuthError >= $this->getConfig('LimitCount', 0))
 		{
-			if (!isset($aArgs['RecaptchaWebclientPluginToken']) || empty($aArgs['RecaptchaWebclientPluginToken']))
+			if (isset($aArgs['RecaptchaWebclientPluginToken']) && !empty($aArgs['RecaptchaWebclientPluginToken']))
+			{
+				$this->sRecaptchaWebclientPluginToken = $aArgs['RecaptchaWebclientPluginToken'];
+			}
+
+			if (!$this->sRecaptchaWebclientPluginToken || empty($this->sRecaptchaWebclientPluginToken))
 			{
 				$mSubscriptionResult = [
 					'Error' => [
@@ -67,7 +81,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 			}
 			$sPrivateKey = $this->getConfig('PrivateKey', '');
 			$oRecaptcha = new \ReCaptcha\ReCaptcha($sPrivateKey, $this->getRequestMethod());
-			$oResponse = $oRecaptcha->verify($aArgs['RecaptchaWebclientPluginToken']);
+			$oResponse = $oRecaptcha->verify($this->sRecaptchaWebclientPluginToken);
 			if (!$oResponse->isSuccess())
 			{
 				\Aurora\System\Api::Log("RECAPTCHA error: " . implode(', ', $oResponse->getErrorCodes()));
@@ -83,7 +97,8 @@ class Module extends \Aurora\System\Module\AbstractModule
 			//If the user is authenticated, reset the counter for unsuccessful attempts.
 			if (isset($_COOKIE['auth-error']))
 			{
-				@\setcookie('auth-error');
+				@\setcookie('auth-error', 0, \strtotime('+1 hour'), \Aurora\System\Api::getCookiePath(), null, \Aurora\System\Api::getCookieSecure());
+//				@\setcookie('auth-error');
 			}
 		}
 	}
