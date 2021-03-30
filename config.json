@@ -15,6 +15,10 @@
 		0,
 		"int"
 	],
+	"WhitelistIPs": [
+		[],
+		"array"
+	],
 	"IncludeInMobile": [
 		true,
 		"bool"

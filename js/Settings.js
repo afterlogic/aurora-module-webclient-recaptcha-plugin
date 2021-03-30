@@ -10,6 +10,7 @@ module.exports = {
 	ModuleName: 'RecaptchaWebclientPlugin',
 	PublicKey: '',
 	LimitCount: 0,
+	ShowRecaptcha: true,
 
 	/**
 	 * Initializes settings from AppData object sections.
@@ -24,6 +25,7 @@ module.exports = {
 		{
 			this.PublicKey = Types.pString(oAppDataSection.PublicKey, this.PublicKey);
 			this.LimitCount = Types.pInt(oAppDataSection.LimitCount, this.LimitCount);
+			this.ShowRecaptcha = Types.pBool(oAppDataSection.ShowRecaptcha, this.ShowRecaptcha);
 		}
 	}
 };

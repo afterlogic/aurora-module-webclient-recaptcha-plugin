@@ -41,7 +41,12 @@ class Module extends \Aurora\System\Module\AbstractModule
 	{
 		$aAddDefault[] = 'www.google.com www.gstatic.com';
 	}
-	
+
+	private function isRecaptchaEnabledForIP()
+	{
+		return !in_array(\Aurora\System\Utils::getClientIp(), $this->getConfig('WhitelistIPs', []));
+	}
+
 	/**
 	 * Obtains list of module settings for authenticated user.
 	 * @return array
@@ -52,7 +57,8 @@ class Module extends \Aurora\System\Module\AbstractModule
 
 		return [
 			'PublicKey' => $this->getConfig('PublicKey', ''),
-			'LimitCount' => $this->getConfig('LimitCount', 0)
+			'LimitCount' => $this->getConfig('LimitCount', 0),
+			'ShowRecaptcha' => $this->isRecaptchaEnabledForIP(),
 		];
 	}
 
@@ -68,7 +74,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 	{
 		$iAuthError = isset($_COOKIE['auth-error']) ? (int) $_COOKIE['auth-error'] : 0;
 		//If the user has exceeded the number of authentication attempts
-		if ($iAuthError >= $this->getConfig('LimitCount', 0))
+		if ($iAuthError >= $this->getConfig('LimitCount', 0) && $this->isRecaptchaEnabledForIP())
 		{
 			if (isset($aArgs['RecaptchaWebclientPluginToken']) && !empty($aArgs['RecaptchaWebclientPluginToken']))
 			{
