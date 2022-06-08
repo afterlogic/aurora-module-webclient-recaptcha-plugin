@@ -1,66 +1,66 @@
 {
-  "Disabled": [
-    true,
-    "bool"
-  ],
-  "Disabled_Description": [
-    "",
-    "string"
-  ],
-  "PublicKey": [
-    "",
-    "string"
-  ],
-  "PublicKey_Description": [
-    "",
-    "string"
-  ],
-  "PrivateKey": [
-    "",
-    "string"
-  ],
-  "PrivateKey_Description": [
-    "",
-    "string"
-  ],
-  "LimitCount": [
-    0,
-    "int"
-  ],
-  "LimitCount_Description": [
-    "",
-    "string"
-  ],
-  "WhitelistIPs": [
-    [],
-    "array"
-  ],
-  "WhitelistIPs_Description": [
-    "",
-    "string"
-  ],
-  "IncludeInMobile": [
-    true,
-    "bool"
-  ],
-  "IncludeInMobile_Description": [
-    "",
-    "string"
-  ],
-  "IncludeInDesktop": [
-    true,
-    "bool"
-  ],
-  "IncludeInDesktop_Description": [
-    "",
-    "string"
-  ],
-  "RequestMethod": [
-    "post",
-    "string"
-  ],
-  "RequestMethod_Description": [
-    "",
-    "string"
-  ]
+	"Disabled": [
+		true,
+		"bool"
+	],
+	"Disabled_Description": [
+		"",
+		"string"
+	],
+	"PublicKey": [
+		"",
+		"string"
+	],
+	"PublicKey_Description": [
+		"",
+		"string"
+	],
+	"PrivateKey": [
+		"",
+		"string"
+	],
+	"PrivateKey_Description": [
+		"",
+		"string"
+	],
+	"LimitCount": [
+		0,
+		"int"
+	],
+	"LimitCount_Description": [
+		"",
+		"string"
+	],
+	"WhitelistIPs": [
+		[],
+		"array"
+	],
+	"WhitelistIPs_Description": [
+		"",
+		"string"
+	],
+	"IncludeInMobile": [
+		true,
+		"bool"
+	],
+	"IncludeInMobile_Description": [
+		"",
+		"string"
+	],
+	"IncludeInDesktop": [
+		true,
+		"bool"
+	],
+	"IncludeInDesktop_Description": [
+		"",
+		"string"
+	],
+	"RequestMethod": [
+		"post",
+		"string"
+	],
+	"RequestMethod_Description": [
+		"",
+		"string"
+	]
 }
