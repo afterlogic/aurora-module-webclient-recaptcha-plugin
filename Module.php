@@ -10,13 +10,23 @@ namespace Aurora\Modules\RecaptchaWebclientPlugin;
 /**
  * @license https://www.gnu.org/licenses/agpl-3.0.html AGPL-3.0
  * @license https://afterlogic.com/products/common-licensing Afterlogic Software License
- * @copyright Copyright (c) 2020, Afterlogic Corp.
+ * @copyright Copyright (c) 2022, Afterlogic Corp.
  *
  * @package Modules
  */
 class Module extends \Aurora\System\Module\AbstractModule
 {
-	protected $sRecaptchaWebclientPluginToken = null;
+	protected $manager = null;
+
+	protected function getManager()
+	{
+		if ($this->manager === null)
+		{
+			$this->manager = new Manager($this);
+		}
+
+		return $this->manager;
+	}
 
 	public function init()
 	{
@@ -28,6 +38,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 		\Aurora\System\EventEmitter::getInstance()->onAny(
 			[
 				['MailLoginFormWebclient::Login::before', [$this, 'onBeforeMailLoginFormWebclientLogin']],
+				['StandardRegisterFormWebclient::Register::before', [$this, 'onBeforeStandardRegisterFormWebclientRegister']],
 				['StandardLoginFormWebclient::Login::before', [$this, 'onBeforeStandardLoginFormWebclient'], 90],
 				['MailSignup::Signup::before', [$this, 'onSignup'], 90],
 				['Core::Login::after', [$this, 'onAfterLogin']]
@@ -42,11 +53,6 @@ class Module extends \Aurora\System\Module\AbstractModule
 		$aAddDefault[] = 'www.google.com www.gstatic.com';
 	}
 
-	private function isRecaptchaEnabledForIP()
-	{
-		return !in_array(\Aurora\System\Utils::getClientIp(), $this->getConfig('WhitelistIPs', []));
-	}
-
 	/**
 	 * Obtains list of module settings for authenticated user.
 	 * @return array
@@ -58,117 +64,63 @@ class Module extends \Aurora\System\Module\AbstractModule
 		return [
 			'PublicKey' => $this->getConfig('PublicKey', ''),
 			'LimitCount' => $this->getConfig('LimitCount', 0),
-			'ShowRecaptcha' => $this->isRecaptchaEnabledForIP(),
+			'ShowRecaptcha' => $this->getManager()->isRecaptchaEnabledForIP(),
 		];
+	}
+
+	public function onBeforeStandardRegisterFormWebclientRegister($aArgs, &$mResult, &$mSubscriptionResult)
+	{
+		if ($this->getManager()->isRecaptchaEnabledForIP()) {
+			$this->getManager()->memorizeRecaptchaWebclientPluginToken($aArgs);
+
+			$mSubscriptionResult = $this->getManager()->checkIfRecaptchaError();
+			if (!empty($mSubscriptionResult)) {
+				// The result contains an error -> stop executing the Register method
+				return true;
+			}
+
+			$this->getManager()->disableRecaptchaCheckOnLogin();
+		}
 	}
 
 	public function onBeforeMailLoginFormWebclientLogin($aArgs, &$mResult, &$mSubscriptionResult)
 	{
-		if (isset($aArgs['RecaptchaWebclientPluginToken']) && !empty($aArgs['RecaptchaWebclientPluginToken']))
-		{
-			$this->sRecaptchaWebclientPluginToken = $aArgs['RecaptchaWebclientPluginToken'];
-		}
+		$this->getManager()->memorizeRecaptchaWebclientPluginToken($aArgs);
 	}
 
 	public function onBeforeStandardLoginFormWebclient($aArgs, &$mResult, &$mSubscriptionResult)
 	{
-		$iAuthError = isset($_COOKIE['auth-error']) ? (int) $_COOKIE['auth-error'] : 0;
-		//If the user has exceeded the number of authentication attempts
-		if ($iAuthError >= $this->getConfig('LimitCount', 0) && $this->isRecaptchaEnabledForIP())
-		{
-			if (isset($aArgs['RecaptchaWebclientPluginToken']) && !empty($aArgs['RecaptchaWebclientPluginToken']))
-			{
-				$this->sRecaptchaWebclientPluginToken = $aArgs['RecaptchaWebclientPluginToken'];
+		if ($this->getManager()->needToCheckRecaptchaOnLogin()) {
+			$this->getManager()->memorizeRecaptchaWebclientPluginToken($aArgs);
+
+			$mSubscriptionResult = $this->getManager()->checkIfRecaptchaError();
+			if (!empty($mSubscriptionResult)) {
+				// The result contains an error -> stop executing the Login method
+				return true;
 			}
 
-			if (!$this->sRecaptchaWebclientPluginToken || empty($this->sRecaptchaWebclientPluginToken))
-			{
-				$mSubscriptionResult = [
-					'Error' => [
-						'Code'		=> Enums\ErrorCodes::RecaptchaVerificationError,
-						'ModuleName'	=> $this->GetName(),
-						'Override'		=> true
-					]
-				];
-				return true;
-			}
-			$sPrivateKey = $this->getConfig('PrivateKey', '');
-			$oRecaptcha = new \ReCaptcha\ReCaptcha($sPrivateKey, $this->getRequestMethod());
-			$oResponse = $oRecaptcha->verify($this->sRecaptchaWebclientPluginToken);
-			if (!$oResponse->isSuccess())
-			{
-				\Aurora\System\Api::Log("RECAPTCHA error: " . implode(', ', $oResponse->getErrorCodes()));
-				$mSubscriptionResult = [
-					'Error' => [
-						'Code'		=> Enums\ErrorCodes::RecaptchaUnknownError,
-						'ModuleName'	=> $this->GetName(),
-						'Override'		=> true
-					]
-				];
-				return true;
-			}
-			//If the user is authenticated, reset the counter for unsuccessful attempts.
-			if (isset($_COOKIE['auth-error']))
-			{
-				@\setcookie('auth-error', 0, \strtotime('+1 hour'), \Aurora\System\Api::getCookiePath(), null, \Aurora\System\Api::getCookieSecure());
-//				@\setcookie('auth-error');
-			}
+			$this->getManager()->clearAuthErrorCount();
 		}
 	}
 
 	public function onSignup($aArgs, &$mResult, &$mSubscriptionResult)
 	{
-		if (!isset($aArgs['RecaptchaWebclientPluginToken']) || empty($aArgs['RecaptchaWebclientPluginToken']))
-		{
-			$mSubscriptionResult = [
-				'Error' => [
-					'Code'		=> Enums\ErrorCodes::RecaptchaVerificationError,
-					'ModuleName'	=> $this->GetName(),
-					'Override'		=> true
-				]
-			];
-			return true;
-		}
-		$sPrivateKey = $this->getConfig('PrivateKey', '');
-		$oRecaptcha = new \ReCaptcha\ReCaptcha($sPrivateKey, $this->getRequestMethod());
-		$oResponse = $oRecaptcha->verify($aArgs['RecaptchaWebclientPluginToken']);
-		if (!$oResponse->isSuccess())
-		{
-			\Aurora\System\Api::Log("RECAPTCHA error: " . implode(', ', $oResponse->getErrorCodes()));
-			$mSubscriptionResult = [
-				'Error' => [
-					'Code'		=> Enums\ErrorCodes::RecaptchaUnknownError,
-					'ModuleName'	=> $this->GetName(),
-					'Override'		=> true
-				]
-			];
-			return true;
+		if ($this->getManager()->isRecaptchaEnabledForIP()) {
+			$this->getManager()->memorizeRecaptchaWebclientPluginToken($aArgs);
+
+			$mSubscriptionResult = $this->getManager()->checkIfRecaptchaError();
+			if (!empty($mSubscriptionResult)) {
+				// The result contains an error -> stop executing the Register method
+				return true;
+			}
 		}
 	}
 
 	public function onAfterLogin($aArgs, &$mResult)
 	{
-		//if auth was failed - incrementing auth-error counter
-		if (!(is_array($mResult) && isset($mResult['AuthToken'])))
-		{
-			$iAuthErrorCount = isset($_COOKIE['auth-error']) ? ((int) $_COOKIE['auth-error'] + 1) : 1;
-			@\setcookie('auth-error', $iAuthErrorCount, \strtotime('+1 hour'), \Aurora\System\Api::getCookiePath(), 
-				null, \Aurora\System\Api::getCookieSecure());
-		}
-	}
-
-	private function getRequestMethod()
-	{
-		$sRequestMethod = $this->getConfig('RequestMethod', Enums\RequestMethods::SocketPost);
-		switch ($sRequestMethod)
-		{
-			case Enums\RequestMethods::CurlPost:
-				return new \ReCaptcha\RequestMethod\CurlPost();
-			case Enums\RequestMethods::Post:
-				return new \ReCaptcha\RequestMethod\Post();
-			case Enums\RequestMethods::SocketPost:
-			default:
-			return new \ReCaptcha\RequestMethod\SocketPost();
+		// if authentication has failed, increment auth-error counter
+		if (!(is_array($mResult) && isset($mResult['AuthToken']))) {
+			$this->getManager()->incrementAuthErrorCount();
 		}
 	}
 }

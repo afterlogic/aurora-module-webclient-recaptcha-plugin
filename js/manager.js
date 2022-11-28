@@ -22,9 +22,10 @@ module.exports = function (oAppData) {
 					App.subscribeEvent('AnonymousUserForm::PopulateBeforeButtonsControllers', _.bind(function (oParams) {
 						if (_.isFunction(oParams.RegisterBeforeButtonsController))
 						{
+							const usingLimitCountModules = ['StandardLoginFormWebclient', 'MailLoginFormWebclient'];
 							oParams.RegisterBeforeButtonsController(new CMainView(
 								oParams.ModuleName,
-								(oParams.ModuleName === 'StandardLoginFormWebclient' || oParams.ModuleName === 'MailLoginFormWebclient')
+								usingLimitCountModules.includes(oParams.ModuleName)
 							));
 						}
 					}, this));
