@@ -16,109 +16,115 @@ namespace Aurora\Modules\RecaptchaWebclientPlugin;
  */
 class Manager extends \Aurora\System\Managers\AbstractManager
 {
-	protected $recaptchaToken = null;
-	protected $allowRecaptchaCheckOnLogin = true;
+    protected $recaptchaToken = null;
+    protected $allowRecaptchaCheckOnLogin = true;
 
-	/**
-	 * @param \Aurora\System\Module\AbstractModule $oModule
-	 */
-	public function __construct(\Aurora\System\Module\AbstractModule $oModule = null)
-	{
-		parent::__construct($oModule);
-	}
+    /**
+     * @param \Aurora\System\Module\AbstractModule $oModule
+     */
+    public function __construct(\Aurora\System\Module\AbstractModule $oModule = null)
+    {
+        parent::__construct($oModule);
+    }
 
-	public function isRecaptchaEnabledForIP()
-	{
-		return !in_array(\Aurora\System\Utils::getClientIp(), $this->oModule->getConfig('WhitelistIPs', []));
-	}
+    public function isRecaptchaEnabledForIP()
+    {
+        return !in_array(\Aurora\System\Utils::getClientIp(), $this->oModule->getConfig('WhitelistIPs', []));
+    }
 
-	public function memorizeRecaptchaWebclientPluginToken($aArgs)
-	{
-		if (isset($aArgs['RecaptchaWebclientPluginToken']) && !empty($aArgs['RecaptchaWebclientPluginToken'])) {
-			$this->recaptchaToken = $aArgs['RecaptchaWebclientPluginToken'];
-		}
-	}
+    public function memorizeRecaptchaWebclientPluginToken($aArgs)
+    {
+        if (isset($aArgs['RecaptchaWebclientPluginToken']) && !empty($aArgs['RecaptchaWebclientPluginToken'])) {
+            $this->recaptchaToken = $aArgs['RecaptchaWebclientPluginToken'];
+        }
+    }
 
-	public function disableRecaptchaCheckOnLogin()
-	{
-		$this->allowRecaptchaCheckOnLogin = false;
-	}
+    public function disableRecaptchaCheckOnLogin()
+    {
+        $this->allowRecaptchaCheckOnLogin = false;
+    }
 
-	public function needToCheckRecaptchaOnLogin()
-	{
-		if (!$this->allowRecaptchaCheckOnLogin) {
-			return false;
-		}
+    public function needToCheckRecaptchaOnLogin()
+    {
+        if (!$this->allowRecaptchaCheckOnLogin) {
+            return false;
+        }
 
-		if (!$this->isRecaptchaEnabledForIP()) {
-			return false;
-		}
+        if (!$this->isRecaptchaEnabledForIP()) {
+            return false;
+        }
 
-		$authErrorCount = isset($_COOKIE['auth-error']) ? (int) $_COOKIE['auth-error'] : 0;
-		// If the user has exceeded the number of authentication attempts
-		if ($authErrorCount >= $this->oModule->getConfig('LimitCount', 0)) {
-			return true;
-		}
+        $authErrorCount = isset($_COOKIE['auth-error']) ? (int) $_COOKIE['auth-error'] : 0;
+        // If the user has exceeded the number of authentication attempts
+        if ($authErrorCount >= $this->oModule->getConfig('LimitCount', 0)) {
+            return true;
+        }
 
-		return false;
-	}
+        return false;
+    }
 
-	public function checkIfRecaptchaError()
-	{
-		if ($this->recaptchaToken === null) {
-			\Aurora\System\Api::Log('RECAPTCHA error: no token');
-			return [
-				'Error' => [
-					'Code' => Enums\ErrorCodes::RecaptchaVerificationError,
-					'ModuleName' => $this->oModule->GetName(),
-					'Override' => true
-				]
-			];
-		}
+    public function checkIfRecaptchaError()
+    {
+        if ($this->recaptchaToken === null) {
+            \Aurora\System\Api::Log('RECAPTCHA error: no token');
+            return [
+                'Error' => [
+                    'Code' => Enums\ErrorCodes::RecaptchaVerificationError,
+                    'ModuleName' => $this->oModule->GetName(),
+                    'Override' => true
+                ]
+            ];
+        }
 
-		$privateKey = $this->oModule->getConfig('PrivateKey', '');
-		$recaptcha = new \ReCaptcha\ReCaptcha($privateKey, $this->getRequestMethod());
-		$response = $recaptcha->verify($this->recaptchaToken);
-		if (!$response->isSuccess()) {
-			\Aurora\System\Api::Log('RECAPTCHA error: ' . implode(', ', $response->getErrorCodes()));
-			return [
-				'Error' => [
-					'Code' => Enums\ErrorCodes::RecaptchaUnknownError,
-					'ModuleName' => $this->oModule->GetName(),
-					'Override' => true
-				]
-			];
-		}
+        $privateKey = $this->oModule->getConfig('PrivateKey', '');
+        $recaptcha = new \ReCaptcha\ReCaptcha($privateKey, $this->getRequestMethod());
+        $response = $recaptcha->verify($this->recaptchaToken);
+        if (!$response->isSuccess()) {
+            \Aurora\System\Api::Log('RECAPTCHA error: ' . implode(', ', $response->getErrorCodes()));
+            return [
+                'Error' => [
+                    'Code' => Enums\ErrorCodes::RecaptchaUnknownError,
+                    'ModuleName' => $this->oModule->GetName(),
+                    'Override' => true
+                ]
+            ];
+        }
 
-		return false;
-	}
+        return false;
+    }
 
-	public function clearAuthErrorCount() 
-	{
-		//If the user is authenticated, reset the counter for unsuccessful attempts.
-		if (isset($_COOKIE['auth-error'])) {
-			@\setcookie('auth-error', 0, \strtotime('+1 hour'), \Aurora\System\Api::getCookiePath(), null, \Aurora\System\Api::getCookieSecure());
-		}
-	}
+    public function clearAuthErrorCount()
+    {
+        //If the user is authenticated, reset the counter for unsuccessful attempts.
+        if (isset($_COOKIE['auth-error'])) {
+            @\setcookie('auth-error', 0, \strtotime('+1 hour'), \Aurora\System\Api::getCookiePath(), null, \Aurora\System\Api::getCookieSecure());
+        }
+    }
 
-	public function incrementAuthErrorCount()
-	{
-		$iAuthErrorCount = isset($_COOKIE['auth-error']) ? ((int) $_COOKIE['auth-error'] + 1) : 1;
-		@\setcookie('auth-error', $iAuthErrorCount, \strtotime('+1 hour'), \Aurora\System\Api::getCookiePath(), 
-			null, \Aurora\System\Api::getCookieSecure());
-	}
+    public function incrementAuthErrorCount()
+    {
+        $iAuthErrorCount = isset($_COOKIE['auth-error']) ? ((int) $_COOKIE['auth-error'] + 1) : 1;
+        @\setcookie(
+            'auth-error',
+            $iAuthErrorCount,
+            \strtotime('+1 hour'),
+            \Aurora\System\Api::getCookiePath(),
+            null,
+            \Aurora\System\Api::getCookieSecure()
+        );
+    }
 
-	private function getRequestMethod()
-	{
-		$sRequestMethod = $this->oModule->getConfig('RequestMethod', Enums\RequestMethods::SocketPost);
-		switch ($sRequestMethod) {
-			case Enums\RequestMethods::CurlPost:
-				return new \ReCaptcha\RequestMethod\CurlPost();
-			case Enums\RequestMethods::Post:
-				return new \ReCaptcha\RequestMethod\Post();
-			case Enums\RequestMethods::SocketPost:
-			default:
-				return new \ReCaptcha\RequestMethod\SocketPost();
-		}
-	}
+    private function getRequestMethod()
+    {
+        $sRequestMethod = $this->oModule->getConfig('RequestMethod', Enums\RequestMethods::SocketPost);
+        switch ($sRequestMethod) {
+            case Enums\RequestMethods::CurlPost:
+                return new \ReCaptcha\RequestMethod\CurlPost();
+            case Enums\RequestMethods::Post:
+                return new \ReCaptcha\RequestMethod\Post();
+            case Enums\RequestMethods::SocketPost:
+            default:
+                return new \ReCaptcha\RequestMethod\SocketPost();
+        }
+    }
 }

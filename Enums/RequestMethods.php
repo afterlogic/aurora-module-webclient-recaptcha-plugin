@@ -14,16 +14,16 @@ namespace Aurora\Modules\RecaptchaWebclientPlugin\Enums;
  */
 class RequestMethods
 {
-	const CurlPost		= 'curlpost';
-	const Post			= 'post';
-	const SocketPost	= 'socketpost';
+    public const CurlPost		= 'curlpost';
+    public const Post			= 'post';
+    public const SocketPost	= 'socketpost';
 
-	/**
-	 * @var array
-	 */
-	protected $aConsts = [
-		'CurlPost'		=> self::CurlPost,
-		'Post'			=> self::Post,
-		'SocketPost'	=> self::SocketPost
-	];
+    /**
+     * @var array
+     */
+    protected $aConsts = [
+        'CurlPost'		=> self::CurlPost,
+        'Post'			=> self::Post,
+        'SocketPost'	=> self::SocketPost
+    ];
 }

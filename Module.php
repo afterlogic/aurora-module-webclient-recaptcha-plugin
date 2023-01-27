@@ -16,111 +16,110 @@ namespace Aurora\Modules\RecaptchaWebclientPlugin;
  */
 class Module extends \Aurora\System\Module\AbstractModule
 {
-	protected $manager = null;
+    protected $manager = null;
 
-	protected function getManager()
-	{
-		if ($this->manager === null)
-		{
-			$this->manager = new Manager($this);
-		}
+    protected function getManager()
+    {
+        if ($this->manager === null) {
+            $this->manager = new Manager($this);
+        }
 
-		return $this->manager;
-	}
+        return $this->manager;
+    }
 
-	public function init()
-	{
-		$this->aErrors = [
-			Enums\ErrorCodes::RecaptchaVerificationError	=> $this->i18N('ERROR_RECAPTCHA_VERIFICATION_DID_NOT_COMPLETE'),
-			Enums\ErrorCodes::RecaptchaUnknownError		=> $this->i18N('ERROR_UNKNOWN_RECAPTCHA_ERROR'),
-		];
+    public function init()
+    {
+        $this->aErrors = [
+            Enums\ErrorCodes::RecaptchaVerificationError	=> $this->i18N('ERROR_RECAPTCHA_VERIFICATION_DID_NOT_COMPLETE'),
+            Enums\ErrorCodes::RecaptchaUnknownError		=> $this->i18N('ERROR_UNKNOWN_RECAPTCHA_ERROR'),
+        ];
 
-		\Aurora\System\EventEmitter::getInstance()->onAny(
-			[
-				['MailLoginFormWebclient::Login::before', [$this, 'onBeforeMailLoginFormWebclientLogin']],
-				['StandardRegisterFormWebclient::Register::before', [$this, 'onBeforeStandardRegisterFormWebclientRegister']],
-				['StandardLoginFormWebclient::Login::before', [$this, 'onBeforeStandardLoginFormWebclient'], 90],
-				['MailSignup::Signup::before', [$this, 'onSignup'], 90],
-				['Core::Login::after', [$this, 'onAfterLogin']]
-			]
-		);
-		
-		$this->subscribeEvent('AddToContentSecurityPolicyDefault', array($this, 'onAddToContentSecurityPolicyDefault'));
-	}
+        \Aurora\System\EventEmitter::getInstance()->onAny(
+            [
+                ['MailLoginFormWebclient::Login::before', [$this, 'onBeforeMailLoginFormWebclientLogin']],
+                ['StandardRegisterFormWebclient::Register::before', [$this, 'onBeforeStandardRegisterFormWebclientRegister']],
+                ['StandardLoginFormWebclient::Login::before', [$this, 'onBeforeStandardLoginFormWebclient'], 90],
+                ['MailSignup::Signup::before', [$this, 'onSignup'], 90],
+                ['Core::Login::after', [$this, 'onAfterLogin']]
+            ]
+        );
 
-	public function onAddToContentSecurityPolicyDefault($aArgs, &$aAddDefault)
-	{
-		$aAddDefault[] = 'www.google.com www.gstatic.com';
-	}
+        $this->subscribeEvent('AddToContentSecurityPolicyDefault', array($this, 'onAddToContentSecurityPolicyDefault'));
+    }
 
-	/**
-	 * Obtains list of module settings for authenticated user.
-	 * @return array
-	 */
-	public function GetSettings()
-	{
-		\Aurora\System\Api::checkUserRoleIsAtLeast(\Aurora\System\Enums\UserRole::Anonymous);
+    public function onAddToContentSecurityPolicyDefault($aArgs, &$aAddDefault)
+    {
+        $aAddDefault[] = 'www.google.com www.gstatic.com';
+    }
 
-		return [
-			'PublicKey' => $this->getConfig('PublicKey', ''),
-			'LimitCount' => $this->getConfig('LimitCount', 0),
-			'ShowRecaptcha' => $this->getManager()->isRecaptchaEnabledForIP(),
-		];
-	}
+    /**
+     * Obtains list of module settings for authenticated user.
+     * @return array
+     */
+    public function GetSettings()
+    {
+        \Aurora\System\Api::checkUserRoleIsAtLeast(\Aurora\System\Enums\UserRole::Anonymous);
 
-	public function onBeforeStandardRegisterFormWebclientRegister($aArgs, &$mResult, &$mSubscriptionResult)
-	{
-		if ($this->getManager()->isRecaptchaEnabledForIP()) {
-			$this->getManager()->memorizeRecaptchaWebclientPluginToken($aArgs);
+        return [
+            'PublicKey' => $this->getConfig('PublicKey', ''),
+            'LimitCount' => $this->getConfig('LimitCount', 0),
+            'ShowRecaptcha' => $this->getManager()->isRecaptchaEnabledForIP(),
+        ];
+    }
 
-			$mSubscriptionResult = $this->getManager()->checkIfRecaptchaError();
-			if (!empty($mSubscriptionResult)) {
-				// The result contains an error -> stop executing the Register method
-				return true;
-			}
+    public function onBeforeStandardRegisterFormWebclientRegister($aArgs, &$mResult, &$mSubscriptionResult)
+    {
+        if ($this->getManager()->isRecaptchaEnabledForIP()) {
+            $this->getManager()->memorizeRecaptchaWebclientPluginToken($aArgs);
 
-			$this->getManager()->disableRecaptchaCheckOnLogin();
-		}
-	}
+            $mSubscriptionResult = $this->getManager()->checkIfRecaptchaError();
+            if (!empty($mSubscriptionResult)) {
+                // The result contains an error -> stop executing the Register method
+                return true;
+            }
 
-	public function onBeforeMailLoginFormWebclientLogin($aArgs, &$mResult, &$mSubscriptionResult)
-	{
-		$this->getManager()->memorizeRecaptchaWebclientPluginToken($aArgs);
-	}
+            $this->getManager()->disableRecaptchaCheckOnLogin();
+        }
+    }
 
-	public function onBeforeStandardLoginFormWebclient($aArgs, &$mResult, &$mSubscriptionResult)
-	{
-		if ($this->getManager()->needToCheckRecaptchaOnLogin()) {
-			$this->getManager()->memorizeRecaptchaWebclientPluginToken($aArgs);
+    public function onBeforeMailLoginFormWebclientLogin($aArgs, &$mResult, &$mSubscriptionResult)
+    {
+        $this->getManager()->memorizeRecaptchaWebclientPluginToken($aArgs);
+    }
 
-			$mSubscriptionResult = $this->getManager()->checkIfRecaptchaError();
-			if (!empty($mSubscriptionResult)) {
-				// The result contains an error -> stop executing the Login method
-				return true;
-			}
+    public function onBeforeStandardLoginFormWebclient($aArgs, &$mResult, &$mSubscriptionResult)
+    {
+        if ($this->getManager()->needToCheckRecaptchaOnLogin()) {
+            $this->getManager()->memorizeRecaptchaWebclientPluginToken($aArgs);
 
-			$this->getManager()->clearAuthErrorCount();
-		}
-	}
+            $mSubscriptionResult = $this->getManager()->checkIfRecaptchaError();
+            if (!empty($mSubscriptionResult)) {
+                // The result contains an error -> stop executing the Login method
+                return true;
+            }
 
-	public function onSignup($aArgs, &$mResult, &$mSubscriptionResult)
-	{
-		if ($this->getManager()->isRecaptchaEnabledForIP()) {
-			$this->getManager()->memorizeRecaptchaWebclientPluginToken($aArgs);
+            $this->getManager()->clearAuthErrorCount();
+        }
+    }
 
-			$mSubscriptionResult = $this->getManager()->checkIfRecaptchaError();
-			if (!empty($mSubscriptionResult)) {
-				// The result contains an error -> stop executing the Register method
-				return true;
-			}
-		}
-	}
+    public function onSignup($aArgs, &$mResult, &$mSubscriptionResult)
+    {
+        if ($this->getManager()->isRecaptchaEnabledForIP()) {
+            $this->getManager()->memorizeRecaptchaWebclientPluginToken($aArgs);
 
-	public function onAfterLogin($aArgs, &$mResult)
-	{
-		// if authentication has failed, increment auth-error counter
-		if (!(is_array($mResult) && isset($mResult['AuthToken']))) {
-			$this->getManager()->incrementAuthErrorCount();
-		}
-	}
+            $mSubscriptionResult = $this->getManager()->checkIfRecaptchaError();
+            if (!empty($mSubscriptionResult)) {
+                // The result contains an error -> stop executing the Register method
+                return true;
+            }
+        }
+    }
+
+    public function onAfterLogin($aArgs, &$mResult)
+    {
+        // if authentication has failed, increment auth-error counter
+        if (!(is_array($mResult) && isset($mResult['AuthToken']))) {
+            $this->getManager()->incrementAuthErrorCount();
+        }
+    }
 }
