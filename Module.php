@@ -47,6 +47,15 @@ class Module extends \Aurora\System\Module\AbstractModule
         $this->subscribeEvent('AddToContentSecurityPolicyDefault', array($this, 'onAddToContentSecurityPolicyDefault'));
     }
 
+    /**
+     *
+     * @return Module
+     */
+    public static function Decorator()
+    {
+        return parent::Decorator();
+    }
+
     public function onAddToContentSecurityPolicyDefault($aArgs, &$aAddDefault)
     {
         $aAddDefault[] = 'www.google.com www.gstatic.com';
