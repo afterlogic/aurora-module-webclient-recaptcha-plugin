@@ -12,6 +12,8 @@ namespace Aurora\Modules\RecaptchaWebclientPlugin;
  * @license https://afterlogic.com/products/common-licensing Afterlogic Software License
  * @copyright Copyright (c) 2023, Afterlogic Corp.
  *
+ * @property Settings $oModuleSettings
+ *
  * @package Modules
  */
 class Module extends \Aurora\System\Module\AbstractModule
@@ -79,8 +81,8 @@ class Module extends \Aurora\System\Module\AbstractModule
         \Aurora\System\Api::checkUserRoleIsAtLeast(\Aurora\System\Enums\UserRole::Anonymous);
 
         return [
-            'PublicKey' => $this->getConfig('PublicKey', ''),
-            'LimitCount' => $this->getConfig('LimitCount', 0),
+            'PublicKey' => $this->oModuleSettings->PublicKey,
+            'LimitCount' => $this->oModuleSettings->LimitCount,
             'ShowRecaptcha' => $this->getManager()->isRecaptchaEnabledForIP(),
         ];
     }
