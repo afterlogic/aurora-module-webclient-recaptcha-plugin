@@ -13,6 +13,8 @@ namespace Aurora\Modules\RecaptchaWebclientPlugin;
  * @copyright Copyright (c) 2023, Afterlogic Corp.
  *
  * @ignore
+ *
+ * @property Module $oModule
  */
 class Manager extends \Aurora\System\Managers\AbstractManager
 {
@@ -29,7 +31,7 @@ class Manager extends \Aurora\System\Managers\AbstractManager
 
     public function isRecaptchaEnabledForIP()
     {
-        return !in_array(\Aurora\System\Utils::getClientIp(), $this->oModule->getConfig('WhitelistIPs', []));
+        return !in_array(\Aurora\System\Utils::getClientIp(), $this->oModule->oModuleSettings->WhitelistIPs);
     }
 
     public function memorizeRecaptchaWebclientPluginToken($aArgs)
@@ -56,7 +58,7 @@ class Manager extends \Aurora\System\Managers\AbstractManager
 
         $authErrorCount = isset($_COOKIE['auth-error']) ? (int) $_COOKIE['auth-error'] : 0;
         // If the user has exceeded the number of authentication attempts
-        if ($authErrorCount >= $this->oModule->getConfig('LimitCount', 0)) {
+        if ($authErrorCount >= $this->oModule->oModuleSettings->LimitCount) {
             return true;
         }
 
@@ -76,7 +78,7 @@ class Manager extends \Aurora\System\Managers\AbstractManager
             ];
         }
 
-        $privateKey = $this->oModule->getConfig('PrivateKey', '');
+        $privateKey = $this->oModule->oModuleSettings->PrivateKey;
         $recaptcha = new \ReCaptcha\ReCaptcha($privateKey, $this->getRequestMethod());
         $response = $recaptcha->verify($this->recaptchaToken);
         if (!$response->isSuccess()) {
@@ -116,7 +118,7 @@ class Manager extends \Aurora\System\Managers\AbstractManager
 
     private function getRequestMethod()
     {
-        $sRequestMethod = $this->oModule->getConfig('RequestMethod', Enums\RequestMethods::SocketPost);
+        $sRequestMethod = $this->oModule->oModuleSettings->RequestMethod;
         switch ($sRequestMethod) {
             case Enums\RequestMethods::CurlPost:
                 return new \ReCaptcha\RequestMethod\CurlPost();

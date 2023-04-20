@@ -8,6 +8,7 @@
 namespace Aurora\Modules\RecaptchaWebclientPlugin;
 
 use Aurora\System\SettingsProperty;
+use Aurora\Modules\RecaptchaWebclientPlugin\Enums;
 
 /**
  * @property bool $Disabled
@@ -68,9 +69,9 @@ class Settings extends \Aurora\System\Module\Settings
                 "If true, the module is used in desktop version of the interface",
             ),
             "RequestMethod" => new SettingsProperty(
-                "post",
-                "string",
-                null,
+                Enums\RequestMethods::SocketPost,
+                "spec",
+                Enums\RequestMethods::class,
                 "Request method used by API",
             ),
         ];
