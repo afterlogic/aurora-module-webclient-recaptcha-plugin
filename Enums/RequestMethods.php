@@ -12,7 +12,7 @@ namespace Aurora\Modules\RecaptchaWebclientPlugin\Enums;
  * @license https://afterlogic.com/products/common-licensing Afterlogic Software License
  * @copyright Copyright (c) 2023, Afterlogic Corp.
  */
-class RequestMethods
+class RequestMethods extends \Aurora\System\Enums\AbstractEnumeration
 {
     public const CurlPost		= 'curlpost';
     public const Post			= 'post';
@@ -21,9 +21,9 @@ class RequestMethods
     /**
      * @var array
      */
-    protected $aConsts = [
-        'CurlPost'		=> self::CurlPost,
-        'Post'			=> self::Post,
-        'SocketPost'	=> self::SocketPost
-    ];
+    protected $aConsts = array(
+        'CurlPost' => self::CurlPost,
+        'Post' => self::Post,
+        'SocketPost' => self::SocketPost
+    );
 }

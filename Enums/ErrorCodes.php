@@ -12,7 +12,7 @@ namespace Aurora\Modules\RecaptchaWebclientPlugin\Enums;
  * @license https://afterlogic.com/products/common-licensing Afterlogic Software License
  * @copyright Copyright (c) 2023, Afterlogic Corp.
  */
-class ErrorCodes
+class ErrorCodes extends \Aurora\System\Enums\AbstractEnumeration
 {
     public const RecaptchaUnknownError		= 1001;
     public const RecaptchaVerificationError	= 1002;
@@ -20,8 +20,8 @@ class ErrorCodes
     /**
      * @var array
      */
-    protected $aConsts = [
-        'RecaptchaUnknownError'		=> self::RecaptchaUnknownError,
-        'RecaptchaVerificationError'	=> self::RecaptchaVerificationError
-    ];
+    protected $aConsts = array(
+        'RecaptchaUnknownError' => self::RecaptchaUnknownError,
+        'RecaptchaVerificationError' => self::RecaptchaVerificationError
+    );
 }
