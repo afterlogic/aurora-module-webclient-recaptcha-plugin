@@ -99,20 +99,21 @@ class Manager extends \Aurora\System\Managers\AbstractManager
     {
         //If the user is authenticated, reset the counter for unsuccessful attempts.
         if (isset($_COOKIE['auth-error'])) {
-            @\setcookie('auth-error', 0, \strtotime('+1 hour'), \Aurora\System\Api::getCookiePath(), null, \Aurora\System\Api::getCookieSecure());
+            \Aurora\System\Api::setCookie(
+                'auth-error',
+                0,
+                \strtotime('+1 hour')
+            );
         }
     }
 
     public function incrementAuthErrorCount()
     {
         $iAuthErrorCount = isset($_COOKIE['auth-error']) ? ((int) $_COOKIE['auth-error'] + 1) : 1;
-        @\setcookie(
+        \Aurora\System\Api::setCookie(
             'auth-error',
             $iAuthErrorCount,
-            \strtotime('+1 hour'),
-            \Aurora\System\Api::getCookiePath(),
-            null,
-            \Aurora\System\Api::getCookieSecure()
+            \strtotime('+1 hour')
         );
     }
 
