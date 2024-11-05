@@ -102,7 +102,8 @@ class Manager extends \Aurora\System\Managers\AbstractManager
             \Aurora\System\Api::setCookie(
                 'auth-error',
                 0,
-                \strtotime('+1 hour')
+                \strtotime('+1 hour'),
+                false
             );
         }
     }
@@ -113,7 +114,8 @@ class Manager extends \Aurora\System\Managers\AbstractManager
         \Aurora\System\Api::setCookie(
             'auth-error',
             $iAuthErrorCount,
-            \strtotime('+1 hour')
+            \strtotime('+1 hour'),
+            false
         );
     }
 
