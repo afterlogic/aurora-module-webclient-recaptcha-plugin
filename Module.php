@@ -144,7 +144,7 @@ class Module extends \Aurora\System\Module\AbstractModule
     public function onAfterLogin($aArgs, &$mResult)
     {
         // if authentication has failed, increment auth-error counter
-        if (!(is_array($mResult) && isset($mResult['AuthToken']))) {
+        if (!(is_array($mResult) && isset($mResult[\Aurora\System\Application::AUTH_TOKEN_KEY]))) {
             $this->getManager()->incrementAuthErrorCount();
         }
     }
