@@ -15,6 +15,7 @@ use Aurora\Modules\RecaptchaWebclientPlugin\Enums;
  * @property string $PublicKey
  * @property string $PrivateKey
  * @property int $LimitCount
+ * @property int $AuthFailureLifetimeMinutes
  * @property array $WhitelistIPs
  * @property bool $IncludeInMobile
  * @property bool $IncludeInDesktop
@@ -49,6 +50,12 @@ class Settings extends \Aurora\System\Module\Settings
                 "int",
                 null,
                 "Denotes number of unsuccessful login attempts required for CAPTCHA to be displayed, 0 - always displayed",
+            ),
+            "AuthFailureLifetimeMinutes" => new SettingsProperty(
+                60,
+                "int",
+                null,
+                "Lifetime in minutes of failed login attempt counter in database and auth-error cookie",
             ),
             "WhitelistIPs" => new SettingsProperty(
                 [],

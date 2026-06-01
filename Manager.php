@@ -7,6 +7,8 @@
 
 namespace Aurora\Modules\RecaptchaWebclientPlugin;
 
+use Aurora\Modules\RecaptchaWebclientPlugin\Models\AuthFailure;
+
 /**
  * @license https://www.gnu.org/licenses/agpl-3.0.html AGPL-3.0
  * @license https://afterlogic.com/products/common-licensing Afterlogic Software License
@@ -46,7 +48,7 @@ class Manager extends \Aurora\System\Managers\AbstractManager
         $this->allowRecaptchaCheckOnLogin = false;
     }
 
-    public function needToCheckRecaptchaOnLogin()
+    public function needToCheckRecaptchaOnLogin(string $sEmail = '')
     {
         if (!$this->allowRecaptchaCheckOnLogin) {
             return false;
@@ -56,8 +58,8 @@ class Manager extends \Aurora\System\Managers\AbstractManager
             return false;
         }
 
-        $authErrorCount = isset($_COOKIE['auth-error']) ? (int) $_COOKIE['auth-error'] : 0;
-        // If the user has exceeded the number of authentication attempts
+        $authErrorCount = $this->getAuthErrorCount($sEmail);
+
         if ($authErrorCount >= $this->oModule->oModuleSettings->LimitCount) {
             return true;
         }
@@ -95,28 +97,104 @@ class Manager extends \Aurora\System\Managers\AbstractManager
         return false;
     }
 
-    public function clearAuthErrorCount()
+    public function clearAuthErrorCount(string $sEmail = '')
     {
-        //If the user is authenticated, reset the counter for unsuccessful attempts.
-        if (isset($_COOKIE['auth-error'])) {
-            \Aurora\System\Api::setCookie(
-                'auth-error',
-                0,
-                \strtotime('+1 hour'),
-                false
-            );
+        if ($sEmail !== '') {
+            AuthFailure::where('Email', $sEmail)
+                ->where('IpAddress', \Aurora\System\Utils::getClientIp())
+                ->delete();
         }
+
+        $this->syncAuthErrorCookie(0);
     }
 
-    public function incrementAuthErrorCount()
+    public function incrementAuthErrorCount(string $sEmail = '')
     {
-        $iAuthErrorCount = isset($_COOKIE['auth-error']) ? ((int) $_COOKIE['auth-error'] + 1) : 1;
+        if ($sEmail === '') {
+            return;
+        }
+
+        $sIp = \Aurora\System\Utils::getClientIp();
+        $this->cleanupExpiredRecords();
+
+        $oRecord = AuthFailure::where('Email', $sEmail)->where('IpAddress', $sIp)->first();
+        if (!$oRecord) {
+            $oRecord = new AuthFailure();
+            $oRecord->Email = $sEmail;
+            $oRecord->IpAddress = $sIp;
+        }
+
+        $iUserId = \Aurora\System\Api::getUserIdByPublicId($sEmail);
+        if ($iUserId) {
+            $oRecord->UserId = $iUserId;
+        }
+
+        $oRecord->ErrorLoginsCount++;
+        $oRecord->Time = time();
+        $oRecord->save();
+
+        $this->syncAuthErrorCookie((int) $oRecord->ErrorLoginsCount);
+    }
+
+    public function getAuthErrorCount(string $sEmail = ''): int
+    {
+        $oRecord = $this->getAuthFailureRecord($sEmail);
+        return $oRecord ? (int) $oRecord->ErrorLoginsCount : 0;
+    }
+
+    private function getAuthFailureLifetimeSeconds(): int
+    {
+        $iMinutes = (int) $this->oModule->oModuleSettings->AuthFailureLifetimeMinutes;
+        $iMinutes = $this->adjustAuthFilureLivetime($iMinutes);
+
+        return $iMinutes * 60;
+    }
+
+    private function cleanupExpiredRecords(): void
+    {
+        AuthFailure::where('Time', '<', time() - $this->getAuthFailureLifetimeSeconds())->delete();
+    }
+
+    private function syncAuthErrorCookie(int $iCount): void
+    {
+        $iMinutes = (int) $this->oModule->oModuleSettings->AuthFailureLifetimeMinutes;
+        $iMinutes = $this->adjustAuthFilureLivetime($iMinutes);
+
         \Aurora\System\Api::setCookie(
             'auth-error',
-            $iAuthErrorCount,
-            \strtotime('+1 hour'),
+            $iCount,
+            \strtotime('+' . $iMinutes . ' minutes'),
             false
         );
+    }
+
+    /**
+     * Adjusts the auth failure lifetime in minutes.
+     * Ensures that the provided value is at least 1 minute; if less, defaults to 60 minutes.
+     *
+     * @param int $iMinutes The number of minutes to set as lifetime.
+     * @return int Adjusted number of minutes (at least 1, default is 1 if invalid).
+     */
+    private function adjustAuthFilureLivetime($iMinutes): int
+    {
+        if ($iMinutes < 1) {
+            $iMinutes = 1;
+        }
+
+        return $iMinutes;
+    }
+
+    private function getAuthFailureRecord(string $sEmail): ?AuthFailure
+    {
+        $this->cleanupExpiredRecords();
+
+        if ($sEmail === '') {
+            return null;
+        }
+
+        return AuthFailure::where('Email', $sEmail)
+            ->where('IpAddress', \Aurora\System\Utils::getClientIp())
+            ->first();
     }
 
     private function getRequestMethod()

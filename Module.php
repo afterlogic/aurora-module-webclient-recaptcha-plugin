@@ -115,7 +115,9 @@ class Module extends \Aurora\System\Module\AbstractModule
 
     public function onBeforeStandardLoginFormWebclient($aArgs, &$mResult, &$mSubscriptionResult)
     {
-        if ($this->getManager()->needToCheckRecaptchaOnLogin()) {
+        $sLogin = $aArgs['Login'] ?? '';
+
+        if ($this->getManager()->needToCheckRecaptchaOnLogin($sLogin)) {
             $this->getManager()->memorizeRecaptchaWebclientPluginToken($aArgs);
 
             $mSubscriptionResult = $this->getManager()->checkIfRecaptchaError();
@@ -124,7 +126,7 @@ class Module extends \Aurora\System\Module\AbstractModule
                 return true;
             }
 
-            $this->getManager()->clearAuthErrorCount();
+            $this->getManager()->clearAuthErrorCount($sLogin);
         }
     }
 
@@ -143,9 +145,12 @@ class Module extends \Aurora\System\Module\AbstractModule
 
     public function onAfterLogin($aArgs, &$mResult)
     {
-        // if authentication has failed, increment auth-error counter
-        if (!(is_array($mResult) && isset($mResult[\Aurora\System\Application::AUTH_TOKEN_KEY]))) {
-            $this->getManager()->incrementAuthErrorCount();
+        $sLogin = $aArgs['Login'] ?? '';
+
+        if (is_array($mResult) && isset($mResult[\Aurora\System\Application::AUTH_TOKEN_KEY])) {
+            $this->getManager()->clearAuthErrorCount($sLogin);
+        } else {
+            $this->getManager()->incrementAuthErrorCount($sLogin);
         }
     }
 }
