@@ -6,7 +6,9 @@ var
 	ko = require('knockout'),
 	
 	App = require('%PathToCoreWebclientModule%/js/App.js'),
-	
+	Screens = require('%PathToCoreWebclientModule%/js/Screens.js'),
+	TextUtils = require('%PathToCoreWebclientModule%/js/utils/Text.js'),
+
 	Settings = require('modules/%ModuleName%/js/Settings.js')
 ;
 
@@ -61,7 +63,15 @@ function CMainView(sModuleName, bUseLimitCount)
 		if (oParams.Module === sModuleName && oParams.Parameters)
 		{
 			var aParams = this.getParametersForSubmit();
-			_.extend(oParams.Parameters, aParams);
+			if (aParams)
+			{
+				_.extend(oParams.Parameters, aParams);
+			}
+			else
+			{
+				oParams.Reject = true;
+				Screens.showError(TextUtils.i18n('%MODULENAME%/ERROR_RECAPTCHA_VERIFICATION_DID_NOT_COMPLETE'));
+			}
 		}
 	}, this));
 	
@@ -105,6 +115,10 @@ CMainView.prototype.ShowRecaptcha = function ()
 	}
 };
 
+/**
+ * @return {Object|boolean} Parameters to submit, or false if the widget is shown but hasn't
+ *                          produced a token yet (the caller should then reject the submit).
+ */
 CMainView.prototype.getParametersForSubmit = function ()
 {
 	var
@@ -112,7 +126,19 @@ CMainView.prototype.getParametersForSubmit = function ()
 		oResult = {}
 	;
 
-	oResult[sParamName] = window.grecaptcha.getResponse(this.widgetId);
+	if (this.bShowRecaptcha())
+	{
+		// Recaptcha is only required once shown (see bUseLimitCount in the constructor) - before
+		// that, window.grecaptcha.getResponse() would legitimately be empty too, but that's not
+		// a rejection, the widget just isn't required yet.
+		var sToken = window.grecaptcha.getResponse(this.widgetId);
+		if (!sToken)
+		{
+			return false;
+		}
+		oResult[sParamName] = sToken;
+	}
+
 	return oResult;
 };
 
